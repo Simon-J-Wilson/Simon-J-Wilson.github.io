@@ -1259,9 +1259,11 @@ async function fetchLivePrices() {
     const priceData = await priceRes.json();
     const eodData = eodRes.ok ? await eodRes.json() : {};
 
-    TICKER_SYMBOLS.forEach(sym => {
-      const pd = priceData[sym];
-      const ed = eodData[sym];
+TICKER_SYMBOLS.forEach(sym => {
+      // Twelve Data free tier sometimes returns flat object for single symbol
+      // and keyed object for multiple — handle both cases
+      const pd = priceData[sym] ?? (priceData.price ? priceData : null);
+      const ed = eodData[sym] ?? (eodData.close ? eodData : null);
       const price = pd?.price ? parseFloat(pd.price) : null;
       const prevClose = ed?.close ? parseFloat(ed.close) : null;
       if (price && price > 0) {
