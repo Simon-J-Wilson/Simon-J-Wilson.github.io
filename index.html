@@ -1225,28 +1225,64 @@
     },
     ];
 
-    /* ── BUILD TICKER ── */
-    const tickerData = [
-      { sym: 'NVDA', price: '$495.20', change: '+2.4%', up: true },
-      { sym: 'META', price: '$512.80', change: '+1.1%', up: true },
-      { sym: 'KO', price: '$63.10', change: '-0.3%', up: false },
-      { sym: 'LLY', price: '$820.50', change: '+3.7%', up: true },
-      { sym: 'DIS', price: '$104.20', change: '-0.8%', up: false },
-      { sym: 'AMD', price: '$155.40', change: '+1.9%', up: true },
-      { sym: 'SPY', price: '$558.90', change: '+0.4%', up: true },
-      { sym: 'QQQ', price: '$472.10', change: '+0.6%', up: true },
-    ];
+    /* ── LIVE TICKER ── */
+const TWELVE_DATA_API_KEY = '3c6584f618d34eeeb4cca96976311204'; // ← paste your key here
+const TICKER_SYMBOLS = ['NVDA', 'META', 'KO', 'LLY', 'DIS', 'AMD', 'JPM', 'SPY', 'QQQ'];
 
-    const ticker = document.getElementById('ticker');
-    const tickerHTML = tickerData.map(t => `
+function renderTicker(priceCache) {
+  const tickerEl = document.getElementById('ticker');
+  const items = TICKER_SYMBOLS.map(sym => {
+    const q = priceCache[sym];
+    if (!q) return `<div class="ticker-item"><span class="symbol">${sym}</span><span class="price" style="color:var(--text-dim)">···</span><span class="ticker-dot">·</span></div>`;
+    const change = q.price - q.prevClose;
+    const changePct = q.prevClose > 0 ? (change / q.prevClose) * 100 : 0;
+    const isUp = change >= 0;
+    return `
       <div class="ticker-item">
-        <span class="symbol">${t.sym}</span>
-        <span class="price">${t.price}</span>
-        <span class="change ${t.up ? 'up' : 'down'}">${t.change}</span>
+        <span class="symbol">${sym}</span>
+        <span class="price">$${q.price.toFixed(2)}</span>
+        <span class="change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${changePct.toFixed(2)}%</span>
         <span class="ticker-dot">·</span>
-      </div>
-    `).join('');
-    ticker.innerHTML = tickerHTML + tickerHTML; // duplicate for seamless loop
+      </div>`;
+  }).join('');
+  tickerEl.innerHTML = items + items;
+}
+
+async function fetchLivePrices() {
+  const priceCache = {};
+  try {
+    const syms = TICKER_SYMBOLS.join(',');
+    const [priceRes, eodRes] = await Promise.all([
+      fetch(`https://api.twelvedata.com/price?symbol=${syms}&apikey=${TWELVE_DATA_API_KEY}`),
+      fetch(`https://api.twelvedata.com/eod?symbol=${syms}&apikey=${TWELVE_DATA_API_KEY}`)
+    ]);
+    const priceData = await priceRes.json();
+    const eodData = eodRes.ok ? await eodRes.json() : {};
+
+    TICKER_SYMBOLS.forEach(sym => {
+      const pd = priceData[sym];
+      const ed = eodData[sym];
+      const price = pd?.price ? parseFloat(pd.price) : null;
+      const prevClose = ed?.close ? parseFloat(ed.close) : null;
+      if (price && price > 0) {
+        priceCache[sym] = { price, prevClose: prevClose || price };
+      }
+    });
+  } catch (err) {
+    console.error('Ticker fetch error:', err);
+  }
+  renderTicker(priceCache);
+  return priceCache;
+}
+
+// Initial load + refresh every 30s
+const tickerEl = document.getElementById('ticker');
+tickerEl.innerHTML = (TICKER_SYMBOLS.map(sym =>
+  `<div class="ticker-item"><span class="symbol">${sym}</span><span class="price" style="color:var(--text-dim)">···</span><span class="ticker-dot">·</span></div>`
+).join('')).repeat(2);
+
+fetchLivePrices();
+setInterval(fetchLivePrices, 30000);
 
     /* ── BUILD REPORTS GRID ── */
     const grid = document.getElementById('reportsGrid');
