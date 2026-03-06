@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports | Equity Research</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0d1321;
+      --navy-mid: #141d2f;
+      --navy-light: #1e2d47;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --cream: #f5f0e8;
+      --cream-dim: #d9d2c4;
+      --text: #e8e4dc;
+      --text-dim: #8a8a8a;
+      --green: #3dba7e;
+      --red: #e05252;
+      --border: rgba(201,168,76,0.18);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      height: 64px;
+      background: rgba(13,19,33,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      color: var(--cream-dim);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+
+    /* PAGE HEADER */
+    .page-header {
+      position: relative;
+      padding: 10rem 3rem 5rem;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .page-header-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    .page-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.2s;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      max-width: 700px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.4s;
+    }
+
+    .page-header h1 em { font-style: italic; color: var(--gold-light); }
+
+    .page-sub {
+      margin-top: 1.2rem;
+      max-width: 480px;
+      font-size: 1rem;
+      color: var(--cream-dim);
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.6s;
+    }
+
+    .page-header-meta {
+      margin-top: 2rem;
+      display: flex;
+      gap: 3rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.8s;
+    }
+
+    .meta-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+    .meta-stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+    .meta-stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+      position: relative;
+      z-index: 1;
+      padding: 0 3rem 3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-right: 0.5rem;
+    }
+
+    .filter-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.9rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--cream-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .filter-btn.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--navy);
+      font-weight: 500;
+    }
+
+    /* REPORTS SECTION */
+    .reports-section {
+      position: relative;
+      z-index: 1;
+      padding: 0 3rem 6rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* REPORT CARDS */
+    .reports-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5px;
+      background: var(--border);
+    }
+
+    .report-card {
+      background: var(--navy-mid);
+      padding: 2.5rem 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+
+    .report-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--gold);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.3s ease;
+    }
+
+    .report-card:hover { background: var(--navy-light); }
+    .report-card:hover::before { transform: scaleY(1); }
+
+    .report-card-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .report-card-left {}
+
+    .report-card-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .card-ticker {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--gold);
+    }
+
+    .card-rating {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.65rem;
+      border: 1px solid;
+      text-transform: uppercase;
+    }
+    .card-rating.buy  { color: var(--green); border-color: var(--green); }
+    .card-rating.hold { color: var(--gold);  border-color: var(--gold); }
+    .card-rating.sell { color: var(--red);   border-color: var(--red); }
+
+    .card-sector {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .card-date {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    .card-company {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-thesis {
+      font-size: 0.92rem;
+      color: var(--cream-dim);
+      line-height: 1.65;
+      max-width: 680px;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Summary expandable */
+    .card-summary {
+      font-size: 0.88rem;
+      color: var(--cream-dim);
+      line-height: 1.75;
+      max-width: 680px;
+      border-left: 2px solid var(--border);
+      padding-left: 1rem;
+      margin-bottom: 1.4rem;
+      display: none;
+    }
+    .card-summary.open { display: block; }
+
+    .toggle-summary {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+    .toggle-summary:hover { color: var(--gold-light); }
+    .toggle-summary .arrow { transition: transform 0.2s; display: inline-block; }
+    .toggle-summary.open .arrow { transform: rotate(90deg); }
+
+    /* Metrics strip */
+    .card-metrics {
+      display: flex;
+      gap: 2.5rem;
+      padding: 0.8rem 0;
+      border-top: 1px solid var(--border);
+      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .metric { display: flex; flex-direction: column; gap: 0.15rem; }
+    .metric-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--cream);
+    }
+    .metric-value.up   { color: var(--green); }
+    .metric-value.down { color: var(--red); }
+
+    /* Download panel */
+    .report-card-right {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: 180px;
+      padding-top: 0.5rem;
+    }
+
+    .download-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    .btn-download {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 1rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--cream-dim);
+      background: transparent;
+      transition: all 0.2s;
+      cursor: pointer;
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .btn-download:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(201,168,76,0.05);
+    }
+
+    .btn-download.word  { border-color: rgba(42,103,180,0.4); }
+    .btn-download.word:hover  { border-color: #4a90d9; color: #4a90d9; background: rgba(74,144,217,0.05); }
+
+    .btn-download.excel { border-color: rgba(33,115,70,0.4); }
+    .btn-download.excel:hover { border-color: #3dba7e; color: var(--green); background: rgba(61,186,126,0.05); }
+
+    .btn-icon { font-size: 1rem; flex-shrink: 0; }
+
+    .unavailable {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-style: italic;
+      padding: 0.4rem 0;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 5rem 2rem;
+      display: none;
+    }
+    .empty-state.visible { display: block; }
+    .empty-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* FOOTER */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 2rem 3rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+    .footer-disclaimer {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      max-width: 500px;
+      text-align: right;
+      opacity: 0.6;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-animate {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .card-animate.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--navy); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); }
+
+    @media (max-width: 900px) {
+      nav { padding: 0 1.5rem; }
+      .nav-links { display: none; }
+      .page-header { padding: 8rem 1.5rem 3rem; }
+      .filter-bar { padding: 0 1.5rem 2rem; }
+      .reports-section { padding: 0 1.5rem 4rem; }
+      .report-card { padding: 1.8rem 1.5rem 1.5rem; }
+      .report-card-inner { grid-template-columns: 1fr; gap: 1.5rem; }
+      .report-card-right { flex-direction: row; flex-wrap: wrap; min-width: unset; }
+      .btn-download { width: auto; flex: 1; min-width: 140px; }
+      .card-date { margin-left: 0; }
+      footer { padding: 1.5rem; flex-direction: column; gap: 1rem; text-align: center; }
+      .footer-disclaimer { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-brand">Equity Research</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="reports.html" class="active">Reports</a></li>
+      <li><a href="index.html#methodology">Methodology</a></li>
+      <li><a href="index.html#about">About</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-grid"></div>
+    <div class="page-tag">Equity Research · All Reports</div>
+    <h1>Initiation of <em>Coverage</em></h1>
+    <p class="page-sub">Full-length research reports covering industry dynamics, financial modeling, multi-scenario valuation, and investment thesis construction.</p>
+    <div class="page-header-meta">
+      <div class="meta-stat">
+        <span class="meta-stat-value" id="total-reports">7</span>
+        <span class="meta-stat-label">Reports</span>
+      </div>
+      <div class="meta-stat">
+        <span class="meta-stat-value" id="buy-count">—</span>
+        <span class="meta-stat-label">Buy Ratings</span>
+      </div>
+      <div class="meta-stat">
+        <span class="meta-stat-value" id="hold-count">—</span>
+        <span class="meta-stat-label">Hold Ratings</span>
+      </div>
+      <div class="meta-stat">
+        <span class="meta-stat-value">DCF + Comps</span>
+        <span class="meta-stat-label">Valuation Method</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="buy">Buy</button>
+    <button class="filter-btn" data-filter="hold">Hold</button>
+    <button class="filter-btn" data-filter="sell">Sell</button>
+    <button class="filter-btn" data-filter="Semiconductors">Semiconductors</button>
+    <button class="filter-btn" data-filter="Pharmaceuticals">Pharmaceuticals</button>
+    <button class="filter-btn" data-filter="Financials">Financials</button>
+  </div>
+
+  <!-- REPORTS LIST -->
+  <section class="reports-section">
+    <div class="section-header">
+      <span class="section-label">All Reports</span>
+      <div class="section-line"></div>
+      <span class="section-label" id="report-count" style="color:var(--text-dim)">7 Reports</span>
+    </div>
+    <div class="reports-list" id="reportsList"></div>
+    <div class="empty-state" id="emptyState">
+      <p>No reports match this filter.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>© 2025 Equity Research Portfolio · All Rights Reserved</p>
+    <p class="footer-disclaimer">Reports are for portfolio and educational purposes only and do not constitute investment advice. Past price targets are not indicative of future performance.</p>
+  </footer>
+
+  <script>
+    /* ─────────────────────────────────────────
+       REPORT DATA
+       To add a new report: add an object to this array.
+       wordFile / excelFile: path to the file in your GitHub repo.
+       Leave as null if the file isn't uploaded yet.
+    ───────────────────────────────────────── */
+    const reports = [
+      {
+        id: 'nvda',
+        ticker: 'NVDA',
+        company: 'NVIDIA Corporation',
+        sector: 'Semiconductors',
+        exchange: 'NASDAQ',
+        rating: 'buy',
+        priceTarget: '$650',
+        currentPrice: '$495',
+        upside: '+31.3%',
+        upsideClass: 'up',
+        date: 'Feb 2025',
+        thesis: 'CUDA ecosystem moat and data center dominance positions NVIDIA as the critical AI compute layer for the next decade.',
+        summary: 'NVIDIA\'s data center segment now represents ~80% of total revenue, driven by insatiable demand for AI training and inference compute. We believe the CUDA software ecosystem — built over 15+ years with millions of developers — creates structural switching costs that AMD and custom ASICs cannot replicate in a 2-3 year horizon. Our DCF (8.5% WACC, 4% TGR) yields $620; blended with EV/EBITDA comps at 35× NTM EBITDA of ~$80B, we arrive at a $650 base case price target. Key catalysts include the Blackwell GPU ramp in H1 2025, NIM software monetization, and sovereign AI build-outs diversifying away from hyperscaler concentration.',
+        wordFile: 'files/NVDA_Equity_Research_Report.docx',
+        excelFile: 'files/NVDA_Valuation_Model.xlsx',
+      },
+      {
+        id: 'meta',
+        ticker: 'META',
+        company: 'Meta Platforms, Inc.',
+        sector: 'Digital Advertising',
+        exchange: 'NASDAQ',
+        rating: 'buy',
+        priceTarget: '$620',
+        currentPrice: '$512',
+        upside: '+21.1%',
+        upsideClass: 'up',
+        date: 'Jan 2025',
+        thesis: 'AI-driven ad personalization improvements and monetization of WhatsApp / Threads represent underappreciated earnings drivers.',
+        summary: 'Meta\'s Advantage+ AI ad suite has demonstrably improved return-on-ad-spend for advertisers, driving both volume and pricing. With 3.3B daily active users across its family of apps, Meta possesses an unmatched social graph that is increasingly difficult to displace. WhatsApp Business monetization remains early-innings — we model a $30-40B annual revenue opportunity by 2028. Reality Labs losses (~$18B/year) represent a $50-70/share drag that any reduction would catalyze. Our blended DCF/P/E framework yields a $620 base case target.',
+        wordFile: 'files/META_Equity_Research_Report.docx',
+        excelFile: 'files/META_Valuation_Model.xlsx',
+      },
+      {
+        id: 'ko',
+        ticker: 'KO',
+        company: 'The Coca-Cola Company',
+        sector: 'Consumer Staples',
+        exchange: 'NYSE',
+        rating: 'hold',
+        priceTarget: '$68',
+        currentPrice: '$63',
+        upside: '+7.9%',
+        upsideClass: 'up',
+        date: 'Dec 2024',
+        thesis: 'Unmatched brand portfolio and distribution provide resilience, but premium valuation limits upside at current prices.',
+        summary: 'Coca-Cola\'s asset-light model and refranchised bottler network generate highly predictable cash flows, supporting 62 consecutive years of dividend growth (Dividend King). Volume trends remain modestly negative in carbonated soft drinks in developed markets, offset by pricing power and emerging market growth. At 22× NTM earnings — a 15% premium to consumer staples peers — we see limited upside. We would become buyers sub-$58, where the dividend yield exceeds 3.5% and the risk/reward improves materially.',
+        wordFile: 'files/KO_Equity_Research_Report.docx',
+        excelFile: 'files/KO_Valuation_Model.xlsx',
+      },
+      {
+        id: 'lly',
+        ticker: 'LLY',
+        company: 'Eli Lilly & Company',
+        sector: 'Pharmaceuticals',
+        exchange: 'NYSE',
+        rating: 'buy',
+        priceTarget: '$1,050',
+        currentPrice: '$820',
+        upside: '+28.0%',
+        upsideClass: 'up',
+        date: 'Nov 2024',
+        thesis: 'GLP-1 obesity franchise Mounjaro/Zepbound represents the most significant pharmaceutical launch in decades, and the pipeline is underappreciated.',
+        summary: 'Tirzepatide (Mounjaro/Zepbound) has captured ~45% of new GLP-1 prescriptions despite supply constraints, demonstrating superior weight loss efficacy vs. Novo Nordisk\'s semaglutide in head-to-head data. We model peak Mounjaro/Zepbound revenues of $35B by 2029. Our sum-of-parts rNPV adds the GLP-1 franchise, donanemab (Alzheimer\'s, potential $10B+ peak sales), oncology, and the legacy portfolio to arrive at a $1,050 base case. The oral GLP-1 orforglipron Phase 3 readout is a major near-term catalyst that could expand the addressable patient population 3×.',
+        wordFile: 'files/LLY_Equity_Research_Report.docx',
+        excelFile: 'files/LLY_Valuation_Model.xlsx',
+      },
+      {
+        id: 'dis',
+        ticker: 'DIS',
+        company: 'The Walt Disney Company',
+        sector: 'Media & Entertainment',
+        exchange: 'NYSE',
+        rating: 'hold',
+        priceTarget: '$115',
+        currentPrice: '$104',
+        upside: '+10.6%',
+        upsideClass: 'up',
+        date: 'Oct 2024',
+        thesis: 'Disney+ reaching profitability is a positive inflection, but parks cyclicality and linear TV secular decline cap upside.',
+        summary: 'Disney\'s streaming inflection removes a key overhang — Disney+ is now profitable and approaching 155M subscribers. Our sum-of-parts values Parks at 12× EBITDA ($45/share), Streaming at 3× revenue ($28/share), ESPN at 8× EBITDA ($22/share), and Film/TV content at $20/share, implying $115. The primary concern is ESPN\'s structural linear decline and $41B net debt load that limits financial flexibility. We would become more constructive with evidence of sustained ARPU above $10 or a clear ESPN DTC strategy.',
+        wordFile: 'files/DIS_Equity_Research_Report.docx',
+        excelFile: 'files/DIS_Valuation_Model.xlsx',
+      },
+      {
+        id: 'amd',
+        ticker: 'AMD',
+        company: 'Advanced Micro Devices',
+        sector: 'Semiconductors',
+        exchange: 'NASDAQ',
+        rating: 'buy',
+        priceTarget: '$210',
+        currentPrice: '$155',
+        upside: '+35.5%',
+        upsideClass: 'up',
+        date: 'Sep 2024',
+        thesis: 'MI300X data center GPU ramp is ahead of Street estimates; AMD is the most credible alternative to NVIDIA and trades at a substantial discount.',
+        summary: 'AMD\'s MI300X has achieved hyperscaler qualification at Microsoft, Meta, and Oracle faster than expected, validating its competitive position in AI inference workloads where CUDA lock-in is weaker. AMD trades at nearly 40% discount to NVIDIA on NTM EV/EBITDA despite a similar growth trajectory — we view this as excessive. Our blended DCF/comps framework yields $210. Key catalysts include MI300X revenue disclosure (our estimate: $4B+ in H1 2025, above consensus) and MI350/MI400 roadmap updates demonstrating continued competitive velocity.',
+        wordFile: 'files/AMD_Equity_Research_Report.docx',
+        excelFile: 'files/AMD_Valuation_Model.xlsx',
+      },
+      {
+        id: 'jpm',
+        ticker: 'JPM',
+        company: 'JPMorgan Chase & Co.',
+        sector: 'Financials',
+        exchange: 'NYSE',
+        rating: 'hold',
+        priceTarget: '$345',
+        currentPrice: '$311',
+        upside: '+11.0%',
+        upsideClass: 'up',
+        date: 'Feb 2026',
+        thesis: 'Exceptional franchise with unmatched scale and returns, but premium valuation at 2.4x TBV and 15x earnings leaves limited near-term upside absent a re-rating catalyst.',
+        summary: 'JPMorgan is the highest-quality franchise in U.S. banking — #1 retail deposit bank, leading global IB fees, and a ROTCE of ~20% that peers cannot match. CET1 of 15.7% sits 200+ bps above minimums, providing capacity to return $25-30B annually. However, at 2.4× TBV vs. a peer average of 1.5×, the premium is largely priced in. Key catalysts are the Basel III Endgame ruling (H1 2026) and CEO succession clarity. Key risk is consumer credit deterioration, particularly in card where charge-offs have been rising. Base case $345 on 16× FY2026E EPS of ~$21.50.',
+        wordFile: 'files/JPM_Equity_Research_Report.docx',
+        excelFile: 'files/JPM_Valuation_Model.xlsx',
+      },
+    ];
+
+    /* ─────────────────────────────────────────
+       BUILD STATS
+    ───────────────────────────────────────── */
+    document.getElementById('buy-count').textContent =
+      reports.filter(r => r.rating === 'buy').length;
+    document.getElementById('hold-count').textContent =
+      reports.filter(r => r.rating === 'hold').length;
+
+    /* ─────────────────────────────────────────
+       RENDER CARDS
+    ───────────────────────────────────────── */
+    function buildCard(r) {
+      const hasWord  = r.wordFile  != null;
+      const hasExcel = r.excelFile != null;
+
+      const wordBtn = hasWord
+        ? `<a href="${r.wordFile}" download class="btn-download word">
+             <span class="btn-icon">📄</span> Download Report
+           </a>`
+        : `<span class="unavailable">Word — Coming Soon</span>`;
+
+      const excelBtn = hasExcel
+        ? `<a href="${r.excelFile}" download class="btn-download excel">
+             <span class="btn-icon">📊</span> Download Model
+           </a>`
+        : `<span class="unavailable">Excel — Coming Soon</span>`;
+
+      return `
+        <div class="report-card card-animate"
+             data-rating="${r.rating}"
+             data-sector="${r.sector}"
+             data-id="${r.id}">
+          <div class="report-card-inner">
+            <div class="report-card-left">
+              <div class="report-card-top">
+                <span class="card-ticker">${r.ticker}</span>
+                <span class="card-rating ${r.rating}">${r.rating.toUpperCase()}</span>
+                <span class="card-sector">${r.sector} · ${r.exchange}</span>
+                <span class="card-date">${r.date}</span>
+              </div>
+              <div class="card-company">${r.company}</div>
+              <div class="card-thesis">${r.thesis}</div>
+
+              <button class="toggle-summary" onclick="toggleSummary('${r.id}', this)">
+                <span class="arrow">▶</span> Read Summary
+              </button>
+              <div class="card-summary" id="summary-${r.id}">
+                ${r.summary}
+              </div>
+
+              <div class="card-metrics">
+                <div class="metric">
+                  <span class="metric-label">Price Target</span>
+                  <span class="metric-value">${r.priceTarget}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">At Time of Writing</span>
+                  <span class="metric-value">${r.currentPrice}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Implied Upside</span>
+                  <span class="metric-value ${r.upsideClass}">${r.upside}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Sector</span>
+                  <span class="metric-value" style="font-size:0.85rem">${r.sector}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="report-card-right">
+              <div class="download-label">Downloads</div>
+              ${wordBtn}
+              ${excelBtn}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderReports(filtered) {
+      const list = document.getElementById('reportsList');
+      const empty = document.getElementById('emptyState');
+      const countEl = document.getElementById('report-count');
+
+      if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.add('visible');
+        countEl.textContent = '0 Reports';
+        return;
+      }
+
+      empty.classList.remove('visible');
+      list.innerHTML = filtered.map(buildCard).join('');
+      countEl.textContent = `${filtered.length} Report${filtered.length !== 1 ? 's' : ''}`;
+
+      // Staggered entrance animation
+      const cards = list.querySelectorAll('.card-animate');
+      cards.forEach((card, i) => {
+        setTimeout(() => card.classList.add('visible'), i * 80);
+      });
+    }
+
+    renderReports(reports);
+
+    /* ─────────────────────────────────────────
+       FILTER
+    ───────────────────────────────────────── */
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filter = btn.dataset.filter;
+        const filtered = filter === 'all'
+          ? reports
+          : reports.filter(r => r.rating === filter || r.sector === filter);
+
+        renderReports(filtered);
+      });
+    });
+
+    /* ─────────────────────────────────────────
+       TOGGLE SUMMARY
+    ───────────────────────────────────────── */
+    function toggleSummary(id, btn) {
+      const summary = document.getElementById(`summary-${id}`);
+      const isOpen = summary.classList.contains('open');
+      summary.classList.toggle('open');
+      btn.classList.toggle('open');
+      btn.querySelector('.arrow').style.transform = isOpen ? '' : 'rotate(90deg)';
+      btn.childNodes[1].textContent = isOpen ? ' Read Summary' : ' Hide Summary';
+    }
+  </script>
+</body>
+</html>
